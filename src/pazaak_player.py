@@ -1,3 +1,8 @@
+"""This module contains two pazaak players: A human one (requiring keyboard
+input) and a computer player. Computer players can use strategies as defined
+in the computer_strategies module.
+"""
+
 import random
 from abc import ABCMeta, abstractmethod
 from pazaak_constants import SCORE_GOAL
@@ -7,6 +12,11 @@ NEUTRAL_CARDS = range(1, 11)
 
 
 def draw_card():
+    """Draw a card
+
+    Returns:
+    A random card chosen from the stack of neutral cards
+    """
     return random.choice(NEUTRAL_CARDS)
 
 
@@ -16,22 +26,37 @@ class AbstractPlayer(metaclass=ABCMeta):
     @property
     @abstractmethod
     def side_deck(self):
-        pass
+        """Abstract Side Deck property"""
 
     @abstractmethod
     def play_card_or_stand(self, opponent):
-        pass
+        """Determine whether to play a card and / or stand
+
+        Args:
+        opponent: Player's opponent
+        """
 
     @classmethod
     def create_human(cls, name):
+        """Creates a human player
+
+        Args:
+        name: Player's name
+        """
         return HumanPlayer(name)
 
     @classmethod
     def create_comupter(cls, name):
+        """Creates a computer player
+
+        Args:
+        name: Player's name
+        """
         return ComputerPlayer(name)
 
     @classmethod
     def create(cls, name):
+        """Creates class with given name"""
         return cls(name)
 
     def __init__(self, name):
@@ -42,30 +67,54 @@ class AbstractPlayer(metaclass=ABCMeta):
         self.name = name
 
     def stand(self):
+        """Used when a player decides to stand (not accepting any more cards)"""
         print(self.name + " stands.")
         self.stands = True
 
     def bust(self):
+        """Used when a player busts (due to too high score)"""
         print(self.name + " busted.")
         self.stands = True
 
     def clear_board(self):
+        """Clears the board for a new game"""
         self.board.clear()
 
     def get_score(self):
+        """Computes player's score from the board
+
+        Returns:
+        player's score
+        """
         return sum(self.board)
 
     def get_status_string(self):
+        """Status string to print on console
+
+        Returns:
+        status string including board and score
+        """
         return f"Board: {self.board}. Score: {self.get_score()}."
 
     def win_set(self):
+        """Wins the set for the player
+
+        Returns:
+        the player
+        """
         self.sets_won += 1
         return self
 
     def draw_hand(self):
+        """Draw cards from the side deck to initiate a new set"""
         self.hand.extend(random.sample(self.side_deck, 4))
 
     def play_card_at(self, index):
+        """Plays card at index
+
+        Args:
+        index: The index in player's hand of the card to play
+        """
         if index < len(self.hand):
             value = self.hand.pop(index)
             self.board.append(value)
@@ -73,6 +122,12 @@ class AbstractPlayer(metaclass=ABCMeta):
             print(self.get_status_string())
 
     def take_turn(self, opponent):
+        """Take a turn: Player draws a card, plays a card from her hand if
+        appropriate, stands if appropriate.
+
+        Args:
+        opponent: The player's opponent
+        """
         print(f"{self.name}'s turn.")
         if not self.stands:
             card = draw_card()

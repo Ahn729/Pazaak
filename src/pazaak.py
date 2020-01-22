@@ -1,7 +1,9 @@
+"""A simple implementation of KotOR's blackjack-inspired minigame"""
+
 import random
 import time
 from pazaak_player import AbstractPlayer as Player
-from pazaak_constants import *
+from pazaak_constants import SCORE_GOAL, SLEEP_TIME, WINNING_SETS
 
 # Change player config here!
 player = Player.create_human("Alfons")
@@ -9,6 +11,11 @@ opponent = Player.create_comupter("Bob")
 
 
 def set_is_over():
+    """Determines whether a set is over
+
+    Returns:
+    True is set is over (both players either busted or stand), else False
+    """
     return(
         player.get_score() > SCORE_GOAL
         or opponent.get_score() > SCORE_GOAL
@@ -16,22 +23,39 @@ def set_is_over():
 
 
 def game_is_over():
+    """Determine whether the game is over
+
+    Returns:
+    True if game is over (a player has won enough sets), else False
+    """
     return WINNING_SETS in (player.sets_won, opponent.sets_won)
 
 
 def get_winner():
+    """Determine the winner of the game
+
+    Returns:
+    The winning player, or None if game isn't over yet
+    """
     if player.sets_won == WINNING_SETS:
         return player
-    elif opponent.sets_won == WINNING_SETS:
+    if opponent.sets_won == WINNING_SETS:
         return opponent
+    return None
 
 
 def setup_game():
+    """Sets up the geame"""
     player.draw_hand()
     opponent.draw_hand()
 
 
 def determine_winner():
+    """Determine the winner of the set
+
+    Returns:
+    The winning player
+    """
     player_score = player.get_score()
     opponent_score = opponent.get_score()
     print(f"Set over. {player.name}'s score: {player_score}, {opponent.name}'s score: {opponent_score}")
@@ -49,6 +73,7 @@ def determine_winner():
 
 
 def prepare_next_set():
+    """Cleanup boards and prepare for for next set"""
     player.stands, opponent.stands = False, False
     player.clear_board()
     opponent.clear_board()
@@ -56,6 +81,7 @@ def prepare_next_set():
 
 # Main #
 def main():
+    """Main entry point of the game"""
     setup_game()
     active_player, inactive_player = random.sample([player, opponent], 2)
 
