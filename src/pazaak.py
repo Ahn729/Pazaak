@@ -1,7 +1,7 @@
 import random
 import time
-from PazaakPlayer import AbstractPlayer as Player
-from PazaakConstants import *
+from pazaak_player import AbstractPlayer as Player
+from pazaak_constants import *
 
 # Change player config here!
 player = Player.create_human("Alfons")
