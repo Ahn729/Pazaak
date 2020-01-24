@@ -9,6 +9,10 @@ WINNING_SETS = 1
 # 4 cards on every player's hand
 HAND_SIZE = 4
 
+# ML settings
+DATASET_FILE_NAME = 'resources/result.csv'
+MODEL_FILE_NAME = 'resources/model.joblib'
+
 # internal settings
 # timeout after every turn, in seconds
 SLEEP_TIME = 0

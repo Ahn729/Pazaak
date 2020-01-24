@@ -1,7 +1,9 @@
 """Collection of strategies to be used by Computer Player"""
 
 import random
-from pazaak_constants import SCORE_GOAL, OPPONENT_STAND_THRESHOLD
+from joblib import load
+from pazaak_constants import SCORE_GOAL, OPPONENT_STAND_THRESHOLD, \
+    MODEL_FILE_NAME
 
 
 def random_strategy(self_hand, self_score, opp_score, opp_stands):
@@ -96,5 +98,37 @@ def blackjack_like_strategy(self_hand, self_score, opp_score, opp_stands):
     # Else just check the threshold
     elif current_score > OPPONENT_STAND_THRESHOLD:
         stand = True
+
+    return (play_card, card_index, stand)
+
+
+def decision_tree_strategy(self_hand, self_score, opp_score, opp_stands):
+    """Plays using the decision tree dumped in the result file of train_model
+
+    Model must be created with computer_learn module.
+    Predicts game outcomes of all possibilities, then choses the best one.
+    """
+    regressor = load(MODEL_FILE_NAME)
+
+    play_card, card_index, stand = False, 0, False
+    score_threshold = -10
+
+    # We extend the player's hand by 0. Playing a 0 is the same as not playing
+    # a card.
+    extended_hand = self_hand + [0]
+
+    for indx, card_val in enumerate(extended_hand):
+        for will_stand in [True, False]:
+            score = regressor.predict([[
+                self_score, opp_stands, card_val, will_stand, self_score - opp_score
+            ]])[0]
+            print(f"Score for Self score: {self_score}, Opp stands: {opp_stands}, "
+                  f"Card: {card_val}, Stand: {will_stand}: {score})")
+            if score > score_threshold:
+                score_threshold = score
+                if card_val == 0:
+                    play_card, card_index, stand = False, 0, will_stand
+                else:
+                    play_card, card_index, stand = True, indx, will_stand
 
     return (play_card, card_index, stand)

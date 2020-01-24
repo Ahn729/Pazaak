@@ -5,11 +5,11 @@ import time
 from pazaak_player import AbstractPlayer as Player
 from pazaak_constants import SCORE_GOAL, SLEEP_TIME, \
     WINNING_SETS, REQUIRE_INPUT_AFTER_SET
-from computer_strategies import blackjack_like_strategy
+from computer_strategies import decision_tree_strategy
 
 # Change player config here!
 player = Player.create_human("Alice")
-opponent = Player.create_computer("Bob", strategy_func=blackjack_like_strategy)
+opponent = Player.create_computer("Bob", strategy_func=decision_tree_strategy)
 
 
 def set_is_over():
