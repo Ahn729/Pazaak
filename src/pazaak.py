@@ -82,9 +82,22 @@ def prepare_next_set():
 
 
 def prepare_next_game():
-    """Cleanop board and players to prepare next game"""
+    """Cleanup board and players to prepare next game"""
     prepare_next_set()
     player.sets_won, opponent.sets_won = 0, 0
+
+
+def play_a_set(active_player, inactive_player):
+    """Plays a single set of Pazaak
+
+    Returns:
+        The winning player
+    """
+    while not set_is_over():
+        active_player.take_turn(inactive_player)
+        time.sleep(SLEEP_TIME)
+        active_player, inactive_player = inactive_player, active_player
+    return determine_winner()
 
 
 def play_a_game():
@@ -96,12 +109,7 @@ def play_a_game():
     setup_game()
     active_player, inactive_player = random.sample([player, opponent], 2)
     while not game_is_over():
-        while not set_is_over():
-            active_player.take_turn(inactive_player)
-            time.sleep(SLEEP_TIME)
-            active_player, inactive_player = inactive_player, active_player
-
-        winner = determine_winner()
+        winner = play_a_set(active_player, inactive_player)
         if winner is not None:
             print(winner.name, "wins the set.")
             # Winner starts next set

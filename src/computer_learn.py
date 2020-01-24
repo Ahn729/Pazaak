@@ -11,7 +11,8 @@ from computer_strategies import blackjack_like_strategy as bls
 from computer_strategies import random_strategy as rds
 import pazaak
 from pazaak_player import AbstractPlayer as Player
-from pazaak_constants import DATASET_FILE_NAME, MODEL_FILE_NAME
+from pazaak_constants import DATASET_FILE_NAME, MODEL_FILE_NAME, \
+    GRAPHVIZ_FILE_NAME
 
 dataset = pd.DataFrame(
         columns=['self_score', 'opp_score', 'opp_stands',
@@ -34,22 +35,28 @@ def create_dataset():
         "MLTrainee", strategy_func=record_results_rand_strategy)
     pazaak.opponent = Player.create_computer("Opponent", strategy_func=bls)
 
-    sets_won = 0
+    sets_won, draws, sets_lost = 0, 0, 0
+
+    pazaak.setup_game()
 
     for _ in range(1, 10000):
-        # TODO: Handle draws
-        winner = pazaak.play_a_game()
-        if winner.name == "MLTrainee":
+        winner = pazaak.play_a_set(
+            *random.sample([pazaak.player, pazaak.opponent], 2))
+        if winner is None:
+            dataset.fillna(0, inplace=True)
+            draws += 1
+        elif winner.name == "MLTrainee":
             dataset.fillna(.5, inplace=True)
             dataset.iloc[-1, 5] = 1
             sets_won += 1
         else:
             dataset.fillna(-.5, inplace=True)
             dataset.iloc[-1, 5] = -1
+            sets_lost += 1
         pazaak.prepare_next_game()
 
     dataset.to_csv(DATASET_FILE_NAME, index=False)
-    print(f"MLTrainee won {sets_won} sets")
+    print(f"MLTrainee won {sets_won} sets. Draws: {draws}. Lost: {sets_lost}")
 
 
 def train_model():
@@ -79,7 +86,7 @@ def train_model():
     print(regressor.feature_importances_)
     export_graphviz(regressor, feature_names=[
         'self_score', 'opp_stands', 'result_stand', 'score_difference',
-        'score_if_card_played'], out_file='resources/graph.dot', filled=True)
+        'score_if_card_played'], out_file=GRAPHVIZ_FILE_NAME, filled=True)
 
     # For persistence, we export the generated model_selection
     dump(regressor, MODEL_FILE_NAME)
