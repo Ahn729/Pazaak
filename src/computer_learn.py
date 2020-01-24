@@ -3,7 +3,7 @@
 import random
 import pandas as pd
 import numpy as np
-from sklearn.tree import DecisionTreeRegressor
+from sklearn.tree import DecisionTreeRegressor, export_graphviz
 from sklearn.model_selection import train_test_split
 from joblib import dump
 
@@ -62,17 +62,24 @@ def train_model():
 
     # A minumum amount of feature engineering: The player's and opponent's
     # exact score may not be that important for our decisions. The difference,
-    # however, certainly is.
+    # however, certainly is. Moreover, the card value itself is not that
+    # important. Here, the sum is.
     dataset['score_difference'] = dataset.self_score - dataset.opp_score
     dataset.drop(columns=['opp_score'], inplace=True)
+    dataset['score_if_card_played'] = dataset.self_score + dataset.result_card_val
+    dataset.drop(columns=['result_card_val'], inplace=True)
 
     # Strategy will be to let our model predict the score for different actions.
     # Hence, we're going to train the model on that now
     X, y = dataset.drop(columns='score'), dataset.score
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-    regressor = DecisionTreeRegressor(max_depth=5, min_samples_leaf=5)
+    regressor = DecisionTreeRegressor(max_depth=4)
     regressor.fit(X_train, y_train)
     print(f"Score on the test set: {regressor.score(X_test, y_test)}")
+    print(regressor.feature_importances_)
+    export_graphviz(regressor, feature_names=[
+        'self_score', 'opp_stands', 'result_stand', 'score_difference',
+        'score_if_card_played'], out_file='resources/graph.dot', filled=True)
 
     # For persistence, we export the generated model_selection
     dump(regressor, MODEL_FILE_NAME)
@@ -85,7 +92,7 @@ def record_results_rand_strategy(self_hand, self_score, opp_score, opp_stands):
     # We want our trainee to make mistakes. However, too many mistakes may not
     # result in a valuable learn dataset. Hence, we're chosing our blackjack
     # strategy over a coplete random strategy, depending on a random value
-    strategy_func = bls if random.random() < 0.9 else rds
+    strategy_func = bls if random.random() < 0.95 else rds
     play_card, card_index, stand = strategy_func(
         self_hand, self_score, opp_score, opp_stands)
     dataset = dataset.append({

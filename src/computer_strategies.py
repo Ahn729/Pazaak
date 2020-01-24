@@ -120,11 +120,12 @@ def decision_tree_strategy(self_hand, self_score, opp_score, opp_stands):
     for indx, card_val in enumerate(extended_hand):
         for will_stand in [True, False]:
             score = regressor.predict([[
-                self_score, opp_stands, card_val, will_stand, self_score - opp_score
+                self_score, opp_stands, will_stand,
+                self_score - opp_score, self_score + card_val
             ]])[0]
             print(f"Score for Self score: {self_score}, Opp stands: {opp_stands}, "
                   f"Card: {card_val}, Stand: {will_stand}: {score})")
-            if score > score_threshold:
+            if score >= score_threshold:
                 score_threshold = score
                 if card_val == 0:
                     play_card, card_index, stand = False, 0, will_stand
