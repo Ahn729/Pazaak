@@ -3,18 +3,19 @@
 import random
 import time
 from pazaak_player import AbstractPlayer as Player
-from pazaak_constants import SCORE_GOAL, SLEEP_TIME, WINNING_SETS
+from pazaak_constants import SCORE_GOAL, SLEEP_TIME, WINNING_SETS, REQUIRE_INPUT_AFTER_SET
+from computer_strategies import blackjack_like_strategy
 
 # Change player config here!
-player = Player.create_human("Alfons")
-opponent = Player.create_comupter("Bob")
+player = Player.create_human("Alice")
+opponent = Player.create_computer("Bob", strategy_func=blackjack_like_strategy)
 
 
 def set_is_over():
     """Determines whether a set is over
 
     Returns:
-    True is set is over (both players either busted or stand), else False
+        True is set is over (both players either busted or stand), else False
     """
     return(
         player.get_score() > SCORE_GOAL
@@ -26,7 +27,7 @@ def game_is_over():
     """Determine whether the game is over
 
     Returns:
-    True if game is over (a player has won enough sets), else False
+        True if game is over (a player has won enough sets), else False
     """
     return WINNING_SETS in (player.sets_won, opponent.sets_won)
 
@@ -35,7 +36,7 @@ def get_winner():
     """Determine the winner of the game
 
     Returns:
-    The winning player, or None if game isn't over yet
+        The winning player, or None if game isn't over yet
     """
     if player.sets_won == WINNING_SETS:
         return player
@@ -54,7 +55,7 @@ def determine_winner():
     """Determine the winner of the set
 
     Returns:
-    The winning player
+        The winning player
     """
     player_score = player.get_score()
     opponent_score = opponent.get_score()
@@ -62,14 +63,13 @@ def determine_winner():
 
     if player_score > SCORE_GOAL:
         return opponent.win_set()
-    elif opponent_score > SCORE_GOAL:
+    if opponent_score > SCORE_GOAL:
         return player.win_set()
-    elif opponent_score > player_score:
+    if opponent_score > player_score:
         return opponent.win_set()
-    elif opponent_score < player_score:
+    if opponent_score < player_score:
         return player.win_set()
-    else:
-        return None
+    return None
 
 
 def prepare_next_set():
@@ -100,7 +100,12 @@ def main():
         else:
             print("Set ends with a draw.")
 
-        input(f"Sets won: {player.name}: {player.sets_won}, {opponent.name}: {opponent.sets_won}.")
+        if REQUIRE_INPUT_AFTER_SET:
+            input(f"Sets won: {player.name}: {player.sets_won}, "
+                  f"{opponent.name}: {opponent.sets_won}.")
+        else:
+            print(f"Sets won: {player.name}: {player.sets_won}, "
+                  f"{opponent.name}: {opponent.sets_won}.")
         prepare_next_set()
     print(f"Game over. {get_winner().name} won. Congratulations!")
 

@@ -1,34 +1,63 @@
 """Collection of strategies to be used by Computer Player"""
 
+import random
 from pazaak_constants import SCORE_GOAL, OPPONENT_STAND_THRESHOLD
+
+
+def random_strategy(self_hand, self_score, opp_score, opp_stands):
+    """Random strategy (all actions are performed at random)
+
+    Args:
+        self_hand: Player's hand (list of card values)
+        self_score: Player's current score
+        opp_score: Opponent's Score
+        opp_stands: Whether or not opponent player opp_stands
+
+    Returns:
+        A tuple (play_card, card_index, stand), where
+        play_card indicates whether a card is played,
+        card_index incicates the index of the card to play (if any),
+        stand indicates whether the player stands.
+    """
+
+    play_card, card_index, stand = False, 0, False
+
+    if self_hand:
+        play_card = random.choice([True, False])
+        card_index = random.randrange(0, len(self_hand))
+
+    stand = random.choice([True, False])
+
+    return (play_card, card_index, stand)
 
 
 def blackjack_like_strategy(self_hand, self_score, opp_score, opp_stands):
     """Blackjack-like strategy (dealer draws to 16 stands on 17)
 
     Args:
-    self_hand: Player's hand (list of card values)
-    self_score: Player's current score
-    opp_score: Opponent's Score
-    opp_stands: Whether or not opponent player opp_stands
+        self_hand: Player's hand (list of card values)
+        self_score: Player's current score
+        opp_score: Opponent's Score
+        opp_stands: Whether or not opponent player opp_stands
 
     Returns:
-    A tuple (play_card, card_index, stand), where
-    play_card indicates whether a card is played,
-    card_index incicates the index of the card to play (if any),
-    stand indicates whether the player stands.
+        A tuple (play_card, card_index, stand), where
+        play_card indicates whether a card is played,
+        card_index incicates the index of the card to play (if any),
+        stand indicates whether the player stands.
     """
 
     current_score = self_score
     play_card, card_index, stand = False, 0, False
 
-    # If standing wins us the game, we do it and won't consider playing a card.
-    if opp_score < self_score <= SCORE_GOAL and opp_stands:
+    # If we're at 20 already, or standing wins us the set,
+    # we do it and won't consider playing a card.
+    if (self_score == SCORE_GOAL
+            or opp_score < self_score <= SCORE_GOAL and opp_stands):
         stand = True
 
+    # else check whether we play a card
     else:
-        # Check whether we play a card
-
         # We always play if we reach 20 or if it results in certain win
         for indx, card in enumerate(self_hand):
             if (self_score + card == SCORE_GOAL

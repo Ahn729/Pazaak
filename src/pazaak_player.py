@@ -5,7 +5,7 @@ in the computer_strategies module.
 
 import random
 from abc import ABCMeta, abstractmethod
-from pazaak_constants import SCORE_GOAL
+from pazaak_constants import SCORE_GOAL, HAND_SIZE
 from computer_strategies import blackjack_like_strategy
 
 NEUTRAL_CARDS = range(1, 11)
@@ -15,7 +15,7 @@ def draw_card():
     """Draw a card
 
     Returns:
-    A random card chosen from the stack of neutral cards
+        A random card chosen from the stack of neutral cards
     """
     return random.choice(NEUTRAL_CARDS)
 
@@ -33,7 +33,7 @@ class AbstractPlayer(metaclass=ABCMeta):
         """Determine whether to play a card and / or stand
 
         Args:
-        opponent: Player's opponent
+            opponent: Player's opponent
         """
 
     @classmethod
@@ -41,18 +41,19 @@ class AbstractPlayer(metaclass=ABCMeta):
         """Creates a human player
 
         Args:
-        name: Player's name
+            name: Player's name
         """
         return HumanPlayer(name)
 
     @classmethod
-    def create_comupter(cls, name):
+    def create_computer(cls, name, strategy_func=blackjack_like_strategy):
         """Creates a computer player
 
         Args:
-        name: Player's name
+            name: Player's name
+            strategy_func: computer strategy fuction to use
         """
-        return ComputerPlayer(name)
+        return ComputerPlayer(name, strategy_func)
 
     @classmethod
     def create(cls, name):
@@ -84,7 +85,7 @@ class AbstractPlayer(metaclass=ABCMeta):
         """Computes player's score from the board
 
         Returns:
-        player's score
+            player's score
         """
         return sum(self.board)
 
@@ -92,7 +93,7 @@ class AbstractPlayer(metaclass=ABCMeta):
         """Status string to print on console
 
         Returns:
-        status string including board and score
+            status string including board and score
         """
         return f"Board: {self.board}. Score: {self.get_score()}."
 
@@ -100,20 +101,20 @@ class AbstractPlayer(metaclass=ABCMeta):
         """Wins the set for the player
 
         Returns:
-        the player
+            the player
         """
         self.sets_won += 1
         return self
 
     def draw_hand(self):
         """Draw cards from the side deck to initiate a new set"""
-        self.hand.extend(random.sample(self.side_deck, 4))
+        self.hand.extend(random.sample(self.side_deck, HAND_SIZE))
 
     def play_card_at(self, index):
         """Plays card at index
 
         Args:
-        index: The index in player's hand of the card to play
+            index: The index in player's hand of the card to play
         """
         if index < len(self.hand):
             value = self.hand.pop(index)
@@ -126,7 +127,7 @@ class AbstractPlayer(metaclass=ABCMeta):
         appropriate, stands if appropriate.
 
         Args:
-        opponent: The player's opponent
+            opponent: The player's opponent
         """
         print(f"{self.name}'s turn.")
         if not self.stands:
@@ -157,7 +158,7 @@ class HumanPlayer(AbstractPlayer):
         else:
             print("Your hand:", self.hand)
             index = input("Play which card? ")
-            if index in ('1', '2', '3', '4'):
+            if index.isdigit() and int(index) in range(1, len(self.hand) + 1):
                 card_index = int(index)-1
                 self.play_card_at(card_index)
 
@@ -177,7 +178,6 @@ class HumanPlayer(AbstractPlayer):
 class ComputerPlayer(AbstractPlayer):
     """Computer pazaak player"""
 
-    strategy_func = blackjack_like_strategy
     side_deck = [val for val in range(-5, 6) for _ in (0, 1) if val != 0]
 
     def __init__(self, name="Opponent", strategy_func=blackjack_like_strategy):
@@ -185,15 +185,14 @@ class ComputerPlayer(AbstractPlayer):
         super().__init__(name)
 
     def play_card_or_stand(self, opponent):
-        play_card, card_index, stand = blackjack_like_strategy(
+        play_card, card_index, stand = self.strategy_func(
             self.hand, self.get_score(), opponent.get_score(), opponent.stands)
 
         if play_card:
             self.play_card_at(card_index)
 
-        if stand:
-            self.stand()
-
-        # Check if we busted
+#       # Check if we busted
         if self.get_score() > SCORE_GOAL:
             self.bust()
+        elif stand:
+            self.stand()
