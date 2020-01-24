@@ -105,7 +105,7 @@ def blackjack_like_strategy(self_hand, self_score, opp_score, opp_stands):
 def decision_tree_strategy(self_hand, self_score, opp_score, opp_stands):
     """Plays using the decision tree dumped in the result file of train_model
 
-    Model must be created with computer_learn module.
+    Model can be created with computer_learn module.
     Predicts game outcomes of all possibilities, then choses the best one.
     """
     regressor = load(MODEL_FILE_NAME)
@@ -123,8 +123,9 @@ def decision_tree_strategy(self_hand, self_score, opp_score, opp_stands):
                 self_score, opp_stands, will_stand,
                 self_score - opp_score, self_score + card_val
             ]])[0]
-            print(f"Score for Self score: {self_score}, Opp stands: {opp_stands}, "
-                  f"Card: {card_val}, Stand: {will_stand}: {score})")
+            # Using >= in the next line (rather than >) ensures that, in the
+            # case of equality, the last solution is selected, which means
+            # we prefer to not take any action.
             if score >= score_threshold:
                 score_threshold = score
                 if card_val == 0:

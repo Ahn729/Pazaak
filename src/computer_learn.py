@@ -6,6 +6,7 @@ import numpy as np
 from sklearn.tree import DecisionTreeRegressor, export_graphviz
 from sklearn.model_selection import train_test_split
 from joblib import dump
+from timeit import default_timer as timer
 
 from computer_strategies import blackjack_like_strategy as bls
 from computer_strategies import random_strategy as rds
@@ -27,8 +28,9 @@ def create_dataset():
     parameters, actions taken and score. We assign the following score
     values:
      * If the set was won, 1 point for the last action, .5 for all others
+     * If the set ends with a draw, 0 points for all actions
      * If the set was lost, -1 point for the last action, -.5 for all others
-     Writes the results in 'result.csv' file
+     Writes the results in DATASET_FILE_NAME (result.csv) file
     """
 
     pazaak.player = Player.create_computer(
@@ -36,12 +38,14 @@ def create_dataset():
     pazaak.opponent = Player.create_computer("Opponent", strategy_func=bls)
 
     sets_won, draws, sets_lost = 0, 0, 0
+    learning_sets = 1000
+    start = timer()
 
     pazaak.setup_game()
 
-    for _ in range(1, 10000):
+    for _ in range(0, learning_sets):
         winner = pazaak.play_a_set(
-            *random.sample([pazaak.player, pazaak.opponent], 2))
+            *random.sample([pazaak.player, pazaak.opponent], 2), sleep_time=0)
         if winner is None:
             dataset.fillna(0, inplace=True)
             draws += 1
@@ -56,7 +60,13 @@ def create_dataset():
         pazaak.prepare_next_game()
 
     dataset.to_csv(DATASET_FILE_NAME, index=False)
+    end = timer()
+    total_time = int(end - start)
+    sets_per_sec = learning_sets / total_time
+
     print(f"MLTrainee won {sets_won} sets. Draws: {draws}. Lost: {sets_lost}")
+    print(f"Played a total of {learning_sets} sets in {total_time} seconds "
+          f"This accounts to {sets_per_sec} sets per second)")
 
 
 def train_model():
@@ -65,30 +75,35 @@ def train_model():
     Currently uses a decision tree without further optimization. There's
     certainly a lot of space for improvement here.
     """
-    dataset = pd.read_csv(DATASET_FILE_NAME)
+    df = pd.read_csv(DATASET_FILE_NAME)
 
     # A minumum amount of feature engineering: The player's and opponent's
     # exact score may not be that important for our decisions. The difference,
     # however, certainly is. Moreover, the card value itself is not that
     # important. Here, the sum is.
-    dataset['score_difference'] = dataset.self_score - dataset.opp_score
-    dataset.drop(columns=['opp_score'], inplace=True)
-    dataset['score_if_card_played'] = dataset.self_score + dataset.result_card_val
-    dataset.drop(columns=['result_card_val'], inplace=True)
+    df['score_difference'] = df.self_score - df.opp_score
+    df.drop(columns=['opp_score'], inplace=True)
+    df['score_if_card_played'] = df.self_score + df.result_card_val
+    df.drop(columns=['result_card_val'], inplace=True)
 
-    # Strategy will be to let our model predict the score for different actions.
+    # Strategy will be to let our model predict the score for different actions
     # Hence, we're going to train the model on that now
-    X, y = dataset.drop(columns='score'), dataset.score
+    X, y = df.drop(columns='score'), df.score
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-    regressor = DecisionTreeRegressor(max_depth=4)
+    regressor = DecisionTreeRegressor(max_depth=7, random_state=42)
     regressor.fit(X_train, y_train)
-    print(f"Score on the test set: {regressor.score(X_test, y_test)}")
-    print(regressor.feature_importances_)
-    export_graphviz(regressor, feature_names=[
-        'self_score', 'opp_stands', 'result_stand', 'score_difference',
-        'score_if_card_played'], out_file=GRAPHVIZ_FILE_NAME, filled=True)
 
-    # For persistence, we export the generated model_selection
+    feature_names = ['self_score', 'opp_stands', 'result_stand',
+                     'score_difference', 'score_if_card_played']
+
+    print(f"Score on the test set: {regressor.score(X_test, y_test)}.")
+    print("Feature importances:")
+    print(pd.DataFrame(data=[regressor.feature_importances_],
+                       columns=feature_names).to_string(index=False))
+    export_graphviz(regressor, feature_names=feature_names,
+                    out_file=GRAPHVIZ_FILE_NAME, filled=True)
+
+    # For persistence, we export the generated model
     dump(regressor, MODEL_FILE_NAME)
 
 

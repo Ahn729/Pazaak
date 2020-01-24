@@ -87,21 +87,30 @@ def prepare_next_game():
     player.sets_won, opponent.sets_won = 0, 0
 
 
-def play_a_set(active_player, inactive_player):
+def play_a_set(active_player, inactive_player, sleep_time=SLEEP_TIME):
     """Plays a single set of Pazaak
+
+    Args:
+        active_player: First player to take a turn
+        inactive_player: Her opponent
+        sleep_time: Time to elapse between turns in seconds
 
     Returns:
         The winning player
     """
     while not set_is_over():
         active_player.take_turn(inactive_player)
-        time.sleep(SLEEP_TIME)
+        time.sleep(sleep_time)
         active_player, inactive_player = inactive_player, active_player
     return determine_winner()
 
 
-def play_a_game():
+def play_a_game(require_input_after_set=REQUIRE_INPUT_AFTER_SET):
     """Plays a single game of Pazaak
+
+    Args:
+        require_input_after_set: Requires user input after set is over in order
+            to suspend game progress
 
     Returns:
         The winning player
@@ -118,7 +127,7 @@ def play_a_game():
         else:
             print("Set ends with a draw.")
 
-        if REQUIRE_INPUT_AFTER_SET:
+        if require_input_after_set:
             input(f"Sets won: {player.name}: {player.sets_won}, "
                   f"{opponent.name}: {opponent.sets_won}.")
         else:

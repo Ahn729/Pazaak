@@ -16,6 +16,6 @@ GRAPHVIZ_FILE_NAME = 'resources/graph.dot'
 
 # internal settings
 # timeout after every turn, in seconds
-SLEEP_TIME = 0
+SLEEP_TIME = 1
 # After a set is won, wait for user input
-REQUIRE_INPUT_AFTER_SET = False
+REQUIRE_INPUT_AFTER_SET = True
