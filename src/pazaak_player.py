@@ -191,7 +191,7 @@ class ComputerPlayer(AbstractPlayer):
         if play_card:
             self.play_card_at(card_index)
 
-#       # Check if we busted
+        # Check if we busted
         if self.get_score() > SCORE_GOAL:
             self.bust()
         elif stand:

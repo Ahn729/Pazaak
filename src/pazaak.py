@@ -3,7 +3,8 @@
 import random
 import time
 from pazaak_player import AbstractPlayer as Player
-from pazaak_constants import SCORE_GOAL, SLEEP_TIME, WINNING_SETS, REQUIRE_INPUT_AFTER_SET
+from pazaak_constants import SCORE_GOAL, SLEEP_TIME, \
+    WINNING_SETS, REQUIRE_INPUT_AFTER_SET
 from computer_strategies import blackjack_like_strategy
 
 # Change player config here!
@@ -59,7 +60,8 @@ def determine_winner():
     """
     player_score = player.get_score()
     opponent_score = opponent.get_score()
-    print(f"Set over. {player.name}'s score: {player_score}, {opponent.name}'s score: {opponent_score}")
+    print(f"Set over. {player.name}'s score: {player_score}, "
+          f"{opponent.name}'s score: {opponent_score}")
 
     if player_score > SCORE_GOAL:
         return opponent.win_set()
@@ -79,12 +81,20 @@ def prepare_next_set():
     opponent.clear_board()
 
 
-# Main #
-def main():
-    """Main entry point of the game"""
+def prepare_next_game():
+    """Cleanop board and players to prepare next game"""
+    prepare_next_set()
+    player.sets_won, opponent.sets_won = 0, 0
+
+
+def play_a_game():
+    """Plays a single game of Pazaak
+
+    Returns:
+        The winning player
+    """
     setup_game()
     active_player, inactive_player = random.sample([player, opponent], 2)
-
     while not game_is_over():
         while not set_is_over():
             active_player.take_turn(inactive_player)
@@ -108,6 +118,13 @@ def main():
                   f"{opponent.name}: {opponent.sets_won}.")
         prepare_next_set()
     print(f"Game over. {get_winner().name} won. Congratulations!")
+    return get_winner()
+
+
+# Main #
+def main():
+    """Main entry point of the game"""
+    play_a_game()
 
 
 if __name__ == "__main__":

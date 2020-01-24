@@ -61,7 +61,8 @@ def blackjack_like_strategy(self_hand, self_score, opp_score, opp_stands):
         # We always play if we reach 20 or if it results in certain win
         for indx, card in enumerate(self_hand):
             if (self_score + card == SCORE_GOAL
-                    or opp_score < self_score + card <= SCORE_GOAL and opp_stands):
+                    or opp_score < self_score + card <= SCORE_GOAL
+                    and opp_stands):
                 play_card, card_index = True, indx
                 current_score += card
                 break
@@ -69,7 +70,8 @@ def blackjack_like_strategy(self_hand, self_score, opp_score, opp_stands):
         # We play to reach 19, but only if the opponent doesn't have 20 already
         else:
             for indx, card in enumerate(self_hand):
-                if self_score + card == SCORE_GOAL - 1 and opp_score != SCORE_GOAL:
+                if (self_score + card == SCORE_GOAL - 1
+                        and opp_score != SCORE_GOAL):
                     play_card, card_index = True, indx
                     current_score += card
                     break
