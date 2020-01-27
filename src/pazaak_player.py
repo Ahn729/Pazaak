@@ -5,6 +5,7 @@ in the computer_strategies module.
 
 import random
 from abc import ABCMeta, abstractmethod
+
 from pazaak_constants import SCORE_GOAL, HAND_SIZE
 from computer_strategies import blackjack_like_strategy
 
@@ -107,8 +108,8 @@ class AbstractPlayer(metaclass=ABCMeta):
         return self
 
     def draw_hand(self):
-        """Draw cards from the side deck to initiate a new set"""
-        self.hand.extend(random.sample(self.side_deck, HAND_SIZE))
+        """Draw cards from the side deck to initiate a new game"""
+        self.hand = random.sample(self.side_deck, HAND_SIZE)
 
     def play_card_at(self, index):
         """Plays card at index

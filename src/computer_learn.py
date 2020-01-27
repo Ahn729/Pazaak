@@ -1,12 +1,14 @@
 """Collection of strategies to be used by Computer Player"""
 
 import random
+from timeit import default_timer as timer
+import functools
+from joblib import dump
+
 import pandas as pd
 import numpy as np
 from sklearn.tree import DecisionTreeRegressor, export_graphviz
 from sklearn.model_selection import train_test_split
-from joblib import dump
-from timeit import default_timer as timer
 
 from computer_strategies import blackjack_like_strategy as bls
 from computer_strategies import random_strategy as rds
@@ -21,8 +23,14 @@ dataset = pd.DataFrame(
         dtype=float)
 
 
-def create_dataset():
+def create_dataset(learning_sets=1000, strategy_func=None):
     """Creates the dataset supplied to a machine learning model
+
+    Args:
+        learning_sets: Number of sets to play in order to create the
+            dataset. Default: 1000
+        strategy_func: Strategy function to use by player. If None is passed,
+            it will be chosen at random in every iteration
 
     Uses record_results_strategy to obtain a pandas dataframe containing
     parameters, actions taken and score. We assign the following score
@@ -33,12 +41,14 @@ def create_dataset():
      Writes the results in DATASET_FILE_NAME (result.csv) file
     """
 
+    player_strategy_func = functools.partial(record_results,
+                                             strategy_func=strategy_func)
+
     pazaak.player = Player.create_computer(
-        "MLTrainee", strategy_func=record_results_rand_strategy)
+        "MLTrainee", strategy_func=player_strategy_func)
     pazaak.opponent = Player.create_computer("Opponent", strategy_func=bls)
 
     sets_won, draws, sets_lost = 0, 0, 0
-    learning_sets = 1000
     start = timer()
 
     pazaak.setup_game()
@@ -65,12 +75,15 @@ def create_dataset():
     sets_per_sec = learning_sets / total_time
 
     print(f"MLTrainee won {sets_won} sets. Draws: {draws}. Lost: {sets_lost}")
-    print(f"Played a total of {learning_sets} sets in {total_time} seconds "
+    print(f"Played a total of {learning_sets} sets in {total_time} seconds. "
           f"This accounts to {sets_per_sec} sets per second)")
 
 
-def train_model():
+def train_model(regressor=DecisionTreeRegressor(max_depth=7, random_state=42)):
     """Trains a model with the dataset obtained by create_dataset
+
+    Args:
+        regressor: The model to use. Defalut: DecisionTreeRegressor
 
     Currently uses a decision tree without further optimization. There's
     certainly a lot of space for improvement here.
@@ -90,31 +103,40 @@ def train_model():
     # Hence, we're going to train the model on that now
     X, y = df.drop(columns='score'), df.score
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-    regressor = DecisionTreeRegressor(max_depth=7, random_state=42)
     regressor.fit(X_train, y_train)
 
     feature_names = ['self_score', 'opp_stands', 'result_stand',
                      'score_difference', 'score_if_card_played']
 
-    print(f"Score on the test set: {regressor.score(X_test, y_test)}.")
+    score = regressor.score(X_test, y_test)
+    print(f"Score on the test set: {score}.")
     print("Feature importances:")
     print(pd.DataFrame(data=[regressor.feature_importances_],
                        columns=feature_names).to_string(index=False))
-    export_graphviz(regressor, feature_names=feature_names,
-                    out_file=GRAPHVIZ_FILE_NAME, filled=True)
+    if isinstance(regressor, DecisionTreeRegressor):
+        export_graphviz(regressor, feature_names=feature_names,
+                        out_file=GRAPHVIZ_FILE_NAME, filled=True)
 
     # For persistence, we export the generated model
     dump(regressor, MODEL_FILE_NAME)
+    return score
 
 
-def record_results_rand_strategy(self_hand, self_score, opp_score, opp_stands):
-    """Plays using a random strategy and records the results"""
+def record_results(self_hand, self_score, opp_score, opp_stands,
+                   strategy_func=None):
+    """Plays using a random strategy and records the results
+
+    Args:
+        strategy_func: Strategy function to use by player. If None is passed,
+            it will be chosen at random in every iteration
+    """
     global dataset
 
     # We want our trainee to make mistakes. However, too many mistakes may not
     # result in a valuable learn dataset. Hence, we're chosing our blackjack
     # strategy over a coplete random strategy, depending on a random value
-    strategy_func = bls if random.random() < 0.95 else rds
+    if strategy_func is None:
+        strategy_func = bls if random.random() < 0.95 else rds
     play_card, card_index, stand = strategy_func(
         self_hand, self_score, opp_score, opp_stands)
     dataset = dataset.append({

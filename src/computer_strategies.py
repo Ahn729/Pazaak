@@ -2,6 +2,7 @@
 
 import random
 from joblib import load
+
 from pazaak_constants import SCORE_GOAL, OPPONENT_STAND_THRESHOLD, \
     MODEL_FILE_NAME
 
@@ -102,7 +103,8 @@ def blackjack_like_strategy(self_hand, self_score, opp_score, opp_stands):
     return (play_card, card_index, stand)
 
 
-def decision_tree_strategy(self_hand, self_score, opp_score, opp_stands):
+def decision_tree_strategy(self_hand, self_score, opp_score, opp_stands,
+                           enable_debug_output=False):
     """Plays using the decision tree dumped in the result file of train_model
 
     Model can be created with computer_learn module.
@@ -123,6 +125,10 @@ def decision_tree_strategy(self_hand, self_score, opp_score, opp_stands):
                 self_score, opp_stands, will_stand,
                 self_score - opp_score, self_score + card_val
             ]])[0]
+            if enable_debug_output:
+                print(f"Score for Self score: {self_score}, "
+                      f"Opp stands: {opp_stands}, Card: {card_val}, "
+                      f"Stand: {will_stand}: {score})")
             # Using >= in the next line (rather than >) ensures that, in the
             # case of equality, the last solution is selected, which means
             # we prefer to not take any action.

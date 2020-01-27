@@ -5,7 +5,7 @@ SCORE_GOAL = 20
 # For blackjack strategy: "dealer draws to 16 stands on 17"
 OPPONENT_STAND_THRESHOLD = 16
 # 3 sets needed to win the game
-WINNING_SETS = 3
+WINNING_SETS = 1
 # 4 cards on every player's hand
 HAND_SIZE = 4
 
