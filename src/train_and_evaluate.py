@@ -1,5 +1,5 @@
 """Wrapper module to train different models and let them play"""
-import sys, os
+
 from timeit import default_timer as timer
 
 from sklearn.tree import DecisionTreeRegressor
@@ -10,6 +10,7 @@ from computer_learn import train_model
 from pazaak_player import AbstractPlayer as Player
 import pazaak
 from computer_strategies import blackjack_like_strategy, decision_tree_strategy
+from misc import suppress_stdout
 
 
 def main():
@@ -36,24 +37,24 @@ def main():
                                     random_state=42)
     }
 
+    pazaak.player = Player.create_computer("MLTrainee",
+                                           decision_tree_strategy)
+    pazaak.opponent = Player.create_computer("Opponent",
+                                             blackjack_like_strategy)
+
     for model_name in models:
         model = models[model_name]
         if isinstance(model, DecisionTreeRegressor):
-            n_games = 5000
+            n_games = 500
         else:
-            n_games = 1000
+            n_games = 100
 
         start = timer()
+        print(f"Training model {model_name}")
         test_score = train_model(models[model_name])
-        pazaak.player = Player.create_computer("MLTrainee",
-                                               decision_tree_strategy)
-        pazaak.opponent = Player.create_computer("Opponent",
-                                                 blackjack_like_strategy)
-        with open(os.devnull, "w") as devnull:
-            tmp = sys.stdout
-            sys.stdout = devnull
+
+        with suppress_stdout():
             games_won = pazaak.play_n_games(n_games)
-            sys.stdout = tmp
         end = timer()
         duration = int(end - start)
         gps = int(n_games / duration)

@@ -1,4 +1,4 @@
-"""Collection of strategies to be used by Computer Player"""
+"""Trains a machine learning model on a dataset created by create_dataset"""
 
 import random
 from timeit import default_timer as timer
@@ -16,6 +16,7 @@ import pazaak
 from pazaak_player import AbstractPlayer as Player
 from pazaak_constants import DATASET_FILE_NAME, MODEL_FILE_NAME, \
     GRAPHVIZ_FILE_NAME
+from misc import suppress_stdout
 
 dataset = pd.DataFrame(
         columns=['self_score', 'opp_score', 'opp_stands',
@@ -53,21 +54,23 @@ def create_dataset(learning_sets=1000, strategy_func=None):
 
     pazaak.setup_game()
 
-    for _ in range(0, learning_sets):
-        winner = pazaak.play_a_set(
-            *random.sample([pazaak.player, pazaak.opponent], 2), sleep_time=0)
-        if winner is None:
-            dataset.fillna(0, inplace=True)
-            draws += 1
-        elif winner.name == "MLTrainee":
-            dataset.fillna(.5, inplace=True)
-            dataset.iloc[-1, 5] = 1
-            sets_won += 1
-        else:
-            dataset.fillna(-.5, inplace=True)
-            dataset.iloc[-1, 5] = -1
-            sets_lost += 1
-        pazaak.prepare_next_game()
+    with suppress_stdout():
+        for _ in range(0, learning_sets):
+            winner = pazaak.play_a_set(
+                *random.sample([pazaak.player, pazaak.opponent], 2),
+                sleep_time=0)
+            if winner is None:
+                dataset.fillna(0, inplace=True)
+                draws += 1
+            elif winner.name == "MLTrainee":
+                dataset.fillna(.5, inplace=True)
+                dataset.iloc[-1, 5] = 1
+                sets_won += 1
+            else:
+                dataset.fillna(-.5, inplace=True)
+                dataset.iloc[-1, 5] = -1
+                sets_lost += 1
+            pazaak.prepare_next_game()
 
     dataset.to_csv(DATASET_FILE_NAME, index=False)
     end = timer()
@@ -79,7 +82,7 @@ def create_dataset(learning_sets=1000, strategy_func=None):
           f"This accounts to {sets_per_sec} sets per second)")
 
 
-def train_model(regressor=DecisionTreeRegressor(max_depth=7, random_state=42)):
+def train_model(regressor=DecisionTreeRegressor(max_depth=5, random_state=42)):
     """Trains a model with the dataset obtained by create_dataset
 
     Args:

@@ -13,7 +13,7 @@ DEBUG_STRATEGY = functools.partial(decision_tree_strategy,
                                    enable_debug_output=True)
 # Change player config here!
 player = Player.create_human("Alice")
-opponent = Player.create_computer("Bob", strategy_func=DEBUG_STRATEGY)
+opponent = Player.create_computer("Bob", strategy_func=decision_tree_strategy)
 
 
 def set_is_over():
