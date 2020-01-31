@@ -2,13 +2,18 @@
 
 import random
 import time
-from pazaak_player import AbstractPlayer as Player
-from pazaak_constants import SCORE_GOAL, SLEEP_TIME, WINNING_SETS, REQUIRE_INPUT_AFTER_SET
-from computer_strategies import blackjack_like_strategy
+import functools
 
+from pazaak_player import AbstractPlayer as Player
+from pazaak_constants import SCORE_GOAL, SLEEP_TIME, \
+    WINNING_SETS, REQUIRE_INPUT_AFTER_SET
+from computer_strategies import decision_tree_strategy, random_forest_strategy
+
+DEBUG_STRATEGY = functools.partial(decision_tree_strategy,
+                                   enable_debug_output=True)
 # Change player config here!
 player = Player.create_human("Alice")
-opponent = Player.create_computer("Bob", strategy_func=blackjack_like_strategy)
+opponent = Player.create_computer("Bob", strategy_func=random_forest_strategy)
 
 
 def set_is_over():
@@ -59,7 +64,8 @@ def determine_winner():
     """
     player_score = player.get_score()
     opponent_score = opponent.get_score()
-    print(f"Set over. {player.name}'s score: {player_score}, {opponent.name}'s score: {opponent_score}")
+    print(f"Set over. {player.name}'s score: {player_score}, "
+          f"{opponent.name}'s score: {opponent_score}")
 
     if player_score > SCORE_GOAL:
         return opponent.win_set()
@@ -79,19 +85,47 @@ def prepare_next_set():
     opponent.clear_board()
 
 
-# Main #
-def main():
-    """Main entry point of the game"""
+def prepare_next_game():
+    """Cleanup board and players to prepare next game"""
+    prepare_next_set()
+    player.sets_won, opponent.sets_won = 0, 0
+    player.draw_hand()
+    opponent.draw_hand()
+
+
+def play_a_set(active_player, inactive_player, sleep_time=SLEEP_TIME):
+    """Plays a single set of Pazaak
+
+    Args:
+        active_player: First player to take a turn
+        inactive_player: Her opponent
+        sleep_time: Time to elapse between turns in seconds
+
+    Returns:
+        The winning player
+    """
+    while not set_is_over():
+        active_player.take_turn(inactive_player)
+        time.sleep(sleep_time)
+        active_player, inactive_player = inactive_player, active_player
+    return determine_winner()
+
+
+def play_a_game(require_input_after_set=REQUIRE_INPUT_AFTER_SET,
+                sleep_time=SLEEP_TIME):
+    """Plays a single game of Pazaak
+
+    Args:
+        require_input_after_set: Requires user input after set is over in order
+            to suspend game progress
+
+    Returns:
+        The winning player
+    """
     setup_game()
     active_player, inactive_player = random.sample([player, opponent], 2)
-
     while not game_is_over():
-        while not set_is_over():
-            active_player.take_turn(inactive_player)
-            time.sleep(SLEEP_TIME)
-            active_player, inactive_player = inactive_player, active_player
-
-        winner = determine_winner()
+        winner = play_a_set(active_player, inactive_player, sleep_time)
         if winner is not None:
             print(winner.name, "wins the set.")
             # Winner starts next set
@@ -100,7 +134,7 @@ def main():
         else:
             print("Set ends with a draw.")
 
-        if REQUIRE_INPUT_AFTER_SET:
+        if require_input_after_set:
             input(f"Sets won: {player.name}: {player.sets_won}, "
                   f"{opponent.name}: {opponent.sets_won}.")
         else:
@@ -108,6 +142,30 @@ def main():
                   f"{opponent.name}: {opponent.sets_won}.")
         prepare_next_set()
     print(f"Game over. {get_winner().name} won. Congratulations!")
+    return get_winner()
+
+
+def play_n_games(n_games=1000):
+    """Plays n games of pazaak
+
+    Args:
+        n_games: The number of games to play; default 1000
+
+    Returns:
+        games_won: The number of games won by the player
+    """
+    games_won = 0
+    for _ in range(0, n_games):
+        if play_a_game(False, 0) is player:
+            games_won += 1
+        prepare_next_game()
+    return games_won
+
+
+# Main #
+def main():
+    """Main entry point of the game. Plays one game"""
+    play_a_game()
 
 
 if __name__ == "__main__":
