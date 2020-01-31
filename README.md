@@ -14,4 +14,6 @@ To use the models, just use the model dumps found in the resources folder. Alter
 2. Using the dataset, train the model with `train_model`. A model dump will be copied to the resources folder to be used by the `ml_trainee_strategy` function. 
 3. You're all set up!
 
+*Note:* Models are trained on a one-set game and turn out to be pretty generous with cards. You can reduce the number of winning sets in the `pazaak_constants` packace to one to give them a fairer chance. :)
+
 If you wish, you can play around with differnt models and evaluate their performance in the `train_and_evaluate` module. 
