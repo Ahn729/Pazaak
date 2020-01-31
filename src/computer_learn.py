@@ -8,6 +8,7 @@ from joblib import dump
 import pandas as pd
 import numpy as np
 from sklearn.tree import DecisionTreeRegressor, export_graphviz
+from sklearn.ensemble import  RandomForestRegressor
 from sklearn.model_selection import train_test_split
 
 from computer_strategies import blackjack_like_strategy as bls
@@ -15,8 +16,11 @@ from computer_strategies import random_strategy as rds
 import pazaak
 from pazaak_player import AbstractPlayer as Player
 from pazaak_constants import DATASET_FILE_NAME, MODEL_FILE_NAME, \
-    GRAPHVIZ_FILE_NAME
+    GRAPHVIZ_FILE_NAME, DECISION_TREE_DEFAULT_DATASET, \
+    DECISION_TREE_DEFAULT_MODEL, RANDOM_FOREST_DEFAULT_DATASET, \
+    RANDOM_FOREST_DEFAULT_MODEL
 from misc import suppress_stdout
+
 
 dataset = pd.DataFrame(
         columns=['self_score', 'opp_score', 'opp_stands',
@@ -36,9 +40,9 @@ def create_dataset(learning_sets=1000, strategy_func=None):
     Uses record_results_strategy to obtain a pandas dataframe containing
     parameters, actions taken and score. We assign the following score
     values:
-     * If the set was won, 1 point for the last action, .5 for all others
+     * If the set was won, 1 point for the last action, .3 for all others
      * If the set ends with a draw, 0 points for all actions
-     * If the set was lost, -1 point for the last action, -.5 for all others
+     * If the set was lost, -1 point for the last action, -.3 for all others
      Writes the results in DATASET_FILE_NAME (result.csv) file
     """
 
@@ -63,11 +67,11 @@ def create_dataset(learning_sets=1000, strategy_func=None):
                 dataset.fillna(0, inplace=True)
                 draws += 1
             elif winner.name == "MLTrainee":
-                dataset.fillna(.5, inplace=True)
+                dataset.fillna(.3, inplace=True)
                 dataset.iloc[-1, 5] = 1
                 sets_won += 1
             else:
-                dataset.fillna(-.5, inplace=True)
+                dataset.fillna(-.3, inplace=True)
                 dataset.iloc[-1, 5] = -1
                 sets_lost += 1
             pazaak.prepare_next_game()
@@ -79,19 +83,23 @@ def create_dataset(learning_sets=1000, strategy_func=None):
 
     print(f"MLTrainee won {sets_won} sets. Draws: {draws}. Lost: {sets_lost}")
     print(f"Played a total of {learning_sets} sets in {total_time} seconds. "
-          f"This accounts to {sets_per_sec} sets per second)")
+          f"This accounts to {sets_per_sec} sets per second.")
 
 
-def train_model(regressor=DecisionTreeRegressor(max_depth=5, random_state=42)):
+def train_model(regressor=DecisionTreeRegressor(max_depth=3, random_state=42),
+                dataset_file_name=DATASET_FILE_NAME,
+                model_file_name=MODEL_FILE_NAME):
     """Trains a model with the dataset obtained by create_dataset
 
     Args:
-        regressor: The model to use. Defalut: DecisionTreeRegressor
+        regressor: The model to use. Default: DecisionTreeRegressor
+        dataset_file_name: csv file to train model. Default: DATASET_FILE_NAME
+        model_file_name: joblib dump of model: Default: MODEL_FILE_NAME
 
-    Currently uses a decision tree without further optimization. There's
-    certainly a lot of space for improvement here.
+        Outputs the model in the file passed in argument model_file_name to
+        be imported by the ml_trainee_strategy in computer_strategies module
     """
-    df = pd.read_csv(DATASET_FILE_NAME)
+    df = pd.read_csv(dataset_file_name)
 
     # A minumum amount of feature engineering: The player's and opponent's
     # exact score may not be that important for our decisions. The difference,
@@ -113,21 +121,32 @@ def train_model(regressor=DecisionTreeRegressor(max_depth=5, random_state=42)):
 
     score = regressor.score(X_test, y_test)
     print(f"Score on the test set: {score}.")
-    print("Feature importances:")
-    print(pd.DataFrame(data=[regressor.feature_importances_],
-                       columns=feature_names).to_string(index=False))
     if isinstance(regressor, DecisionTreeRegressor):
         export_graphviz(regressor, feature_names=feature_names,
                         out_file=GRAPHVIZ_FILE_NAME, filled=True)
 
     # For persistence, we export the generated model
-    dump(regressor, MODEL_FILE_NAME)
+    dump(regressor, model_file_name)
     return score
+
+
+def train_decision_tree():
+    """Shorthand method for training decision tree with standard parameters"""
+    train_model(DecisionTreeRegressor(max_depth=3, random_state=42),
+                dataset_file_name=DECISION_TREE_DEFAULT_DATASET,
+                model_file_name=DECISION_TREE_DEFAULT_MODEL)
+
+
+def train_random_forest():
+    """Shorthand method for training random forest with standard parameters"""
+    train_model(RandomForestRegressor(max_depth=4, random_state=42),
+                dataset_file_name=RANDOM_FOREST_DEFAULT_DATASET,
+                model_file_name=RANDOM_FOREST_DEFAULT_MODEL)
 
 
 def record_results(self_hand, self_score, opp_score, opp_stands,
                    strategy_func=None):
-    """Plays using a random strategy and records the results
+    """Plays using a given strategy and records the results
 
     Args:
         strategy_func: Strategy function to use by player. If None is passed,
@@ -139,7 +158,7 @@ def record_results(self_hand, self_score, opp_score, opp_stands,
     # result in a valuable learn dataset. Hence, we're chosing our blackjack
     # strategy over a coplete random strategy, depending on a random value
     if strategy_func is None:
-        strategy_func = bls if random.random() < 0.95 else rds
+        strategy_func = bls if random.random() < 0.9 else rds
     play_card, card_index, stand = strategy_func(
         self_hand, self_score, opp_score, opp_stands)
     dataset = dataset.append({

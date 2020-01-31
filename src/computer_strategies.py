@@ -4,7 +4,8 @@ import random
 from joblib import load
 
 from pazaak_constants import SCORE_GOAL, OPPONENT_STAND_THRESHOLD, \
-    MODEL_FILE_NAME
+                             MODEL_FILE_NAME, DECISION_TREE_DEFAULT_MODEL, \
+                             RANDOM_FOREST_DEFAULT_MODEL
 
 
 def random_strategy(self_hand, self_score, opp_score, opp_stands):
@@ -103,20 +104,21 @@ def blackjack_like_strategy(self_hand, self_score, opp_score, opp_stands):
     return (play_card, card_index, stand)
 
 
-def decision_tree_strategy(self_hand, self_score, opp_score, opp_stands,
-                           enable_debug_output=False):
-    """Plays using the decision tree dumped in the result file of train_model
+def ml_trainee_strategy(self_hand, self_score, opp_score, opp_stands,
+                        enable_debug_output=False,
+                        model_file_name=MODEL_FILE_NAME):
+    """Plays using any model dumped in the result file of train_model
 
     Model can be created with computer_learn module.
     Predicts game outcomes of all possibilities, then choses the best one.
     """
-    regressor = load(MODEL_FILE_NAME)
+    regressor = load(model_file_name)
 
     play_card, card_index, stand = False, 0, False
     score_threshold = -10
 
     # We extend the player's hand by 0. Playing a 0 is the same as not playing
-    # a card.
+    # any card.
     extended_hand = self_hand + [0]
 
     for indx, card_val in enumerate(extended_hand):
@@ -140,3 +142,29 @@ def decision_tree_strategy(self_hand, self_score, opp_score, opp_stands,
                     play_card, card_index, stand = True, indx, will_stand
 
     return (play_card, card_index, stand)
+
+
+def decision_tree_strategy(self_hand, self_score, opp_score, opp_stands,
+                           enable_debug_output=False):
+    """Plays using the decision tree dumped in the result file of
+    train_decision_tree.
+
+    Model can be created with computer_learn module.
+    Predicts game outcomes of all possibilities, then choses the best one.
+    """
+    return ml_trainee_strategy(self_hand, self_score, opp_score, opp_stands,
+                               enable_debug_output=enable_debug_output,
+                               model_file_name=DECISION_TREE_DEFAULT_MODEL)
+
+
+def random_forest_strategy(self_hand, self_score, opp_score, opp_stands,
+                           enable_debug_output=False):
+    """Plays using the random forest dumped in the result file of
+    train_random_forest
+
+    Model can be created with computer_learn module.
+    Predicts game outcomes of all possibilities, then choses the best one.
+    """
+    return ml_trainee_strategy(self_hand, self_score, opp_score, opp_stands,
+                               enable_debug_output=enable_debug_output,
+                               model_file_name=RANDOM_FOREST_DEFAULT_MODEL)
